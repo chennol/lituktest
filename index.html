@@ -105,7 +105,10 @@
                             <h2>Favourite Questions</h2>
                             <p id="favorite-questions-count">0 saved questions</p>
                         </div>
-                        <button id="clear-favorite-questions-btn" class="secondary-action">Clear</button>
+                        <div class="panel-actions">
+                            <button id="clear-favorite-questions-btn" class="secondary-action">Clear</button>
+                            <button id="undo-clear-favorite-questions-btn" class="undo-action" type="button" disabled>Undo</button>
+                        </div>
                     </div>
                     <div id="favorite-questions-list" class="favorite-questions-list">
                         <!-- Favourite questions will be injected here -->
@@ -124,7 +127,10 @@
                             <h2>Question Dashboard</h2>
                             <p id="dashboard-summary">No answers tracked yet</p>
                         </div>
-                        <button id="clear-question-stats-btn" class="secondary-action">Reset Stats</button>
+                        <div class="panel-actions">
+                            <button id="clear-question-stats-btn" class="secondary-action">Reset Stats</button>
+                            <button id="undo-clear-question-stats-btn" class="undo-action" type="button" disabled>Undo</button>
+                        </div>
                     </div>
                     <div id="dashboard-metrics" class="dashboard-metrics">
                         <!-- Lifetime metrics will be injected here -->
@@ -152,7 +158,10 @@
                             <h2>Failed Questions</h2>
                             <p id="failed-questions-count">0 saved questions</p>
                         </div>
-                        <button id="clear-failed-questions-btn" class="secondary-action">Clear</button>
+                        <div class="panel-actions">
+                            <button id="clear-failed-questions-btn" class="secondary-action">Clear</button>
+                            <button id="undo-clear-failed-questions-btn" class="undo-action" type="button" disabled>Undo</button>
+                        </div>
                     </div>
                     <div id="failed-questions-list" class="failed-questions-list">
                         <!-- Failed questions will be injected here -->

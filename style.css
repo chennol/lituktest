@@ -454,6 +454,26 @@ h3 { font-size: 1rem; margin-bottom: var(--spacing); }
     color: white;
 }
 
+.panel-actions {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 8px;
+}
+
+.undo-action {
+    background-color: white;
+    border: 1px solid var(--primary-color);
+    color: var(--primary-color);
+    font-size: 0.85rem;
+    font-weight: bold;
+    padding: 8px 12px;
+}
+
+.undo-action:hover {
+    background-color: var(--primary-color);
+    color: white;
+}
+
 .download-link:hover {
     background-color: var(--primary-color);
     color: white;
@@ -1073,6 +1093,12 @@ footer {
     .dashboard-header {
         align-items: stretch;
         flex-direction: column;
+    }
+    .panel-actions {
+        width: 100%;
+    }
+    .panel-actions button {
+        flex: 1;
     }
     .dashboard-metrics {
         grid-template-columns: repeat(2, 1fr);

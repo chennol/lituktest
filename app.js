@@ -11,6 +11,7 @@ let favoriteQuestions = [];
 let questionStats = {};
 let isMarathon = false;
 let isFailedReview = false;
+let lastClearAction = null;
 
 // Timer State
 let timerInterval = null;
@@ -60,12 +61,14 @@ const retakeFailedExamBtn = document.getElementById('retake-failed-exam-btn');
 const retakeFailedAttentionBtn = document.getElementById('retake-failed-attention-btn');
 const retakeFailedAllBtn = document.getElementById('retake-failed-all-btn');
 const clearFailedQuestionsBtn = document.getElementById('clear-failed-questions-btn');
+const undoClearFailedQuestionsBtn = document.getElementById('undo-clear-failed-questions-btn');
 const favoriteQuestionsSection = document.getElementById('favorite-questions-section');
 const favoriteQuestionsCount = document.getElementById('favorite-questions-count');
 const favoriteQuestionsList = document.getElementById('favorite-questions-list');
 const retakeFavoriteExamBtn = document.getElementById('retake-favorite-exam-btn');
 const retakeFavoriteAllBtn = document.getElementById('retake-favorite-all-btn');
 const clearFavoriteQuestionsBtn = document.getElementById('clear-favorite-questions-btn');
+const undoClearFavoriteQuestionsBtn = document.getElementById('undo-clear-favorite-questions-btn');
 const homeTabs = document.querySelectorAll('.home-tab');
 const homeTabPanels = document.querySelectorAll('.home-tab-panel');
 const dashboardSummary = document.getElementById('dashboard-summary');
@@ -73,6 +76,7 @@ const dashboardMetrics = document.getElementById('dashboard-metrics');
 const questionStatsList = document.getElementById('question-stats-list');
 const questionStatsFilter = document.getElementById('question-stats-filter');
 const clearQuestionStatsBtn = document.getElementById('clear-question-stats-btn');
+const undoClearQuestionStatsBtn = document.getElementById('undo-clear-question-stats-btn');
 const masteryProgressSummary = document.getElementById('mastery-progress-summary');
 const masteryProgressPercent = document.getElementById('mastery-progress-percent');
 const masteryProgressFill = document.getElementById('mastery-progress-fill');
@@ -112,10 +116,14 @@ async function init() {
         renderQuestionDashboard();
         renderFailedQuestionsHome();
         renderFavoriteQuestionsHome();
+        renderUndoClearButtons();
     } catch (error) {
         console.error('Failed to initialize app:', error);
         if (!examsLoaded) {
-            examList.innerHTML = '<p>Error loading exams. Please ensure exams.json exists.</p>';
+            const isFileUrl = window.location.protocol === 'file:';
+            examList.innerHTML = isFileUrl
+                ? '<p>Error loading exams. Start the local server, then open http://127.0.0.1:8000/ instead of opening index.html directly.</p>'
+                : '<p>Error loading exams. Make sure the local server is running from this project folder and exams.json is reachable.</p>';
         } else {
             examList.innerHTML = '<p>Error starting the app. Please refresh the page.</p>';
         }
@@ -1141,6 +1149,55 @@ function saveFavoriteQuestions() {
     saveHistoryToServer();
 }
 
+function cloneForUndo(value) {
+    return JSON.parse(JSON.stringify(value));
+}
+
+function rememberClearAction(type, payload) {
+    lastClearAction = { type, payload: cloneForUndo(payload) };
+    renderUndoClearButtons();
+}
+
+function clearRememberedClearAction() {
+    lastClearAction = null;
+    renderUndoClearButtons();
+}
+
+function renderUndoClearButtons() {
+    [
+        { button: undoClearFavoriteQuestionsBtn, type: 'favorites' },
+        { button: undoClearFailedQuestionsBtn, type: 'failed' },
+        { button: undoClearQuestionStatsBtn, type: 'stats' }
+    ].forEach(({ button, type }) => {
+        if (!button) return;
+        button.disabled = !lastClearAction || lastClearAction.type !== type;
+    });
+}
+
+function undoLastClear() {
+    if (!lastClearAction) return;
+
+    if (lastClearAction.type === 'favorites') {
+        favoriteQuestions = cloneForUndo(lastClearAction.payload);
+        saveFavoriteQuestions();
+        renderFavoriteQuestionsHome();
+        if (currentQuestions[currentQuestionIndex]) {
+            renderFavoriteQuestionButton(currentQuestions[currentQuestionIndex]);
+        }
+    } else if (lastClearAction.type === 'failed') {
+        allFailedQuestions = cloneForUndo(lastClearAction.payload);
+        saveFailedQuestions();
+        renderFailedQuestionsHome();
+    } else if (lastClearAction.type === 'stats') {
+        questionStats = cloneForUndo(lastClearAction.payload);
+        saveQuestionStats();
+        renderMasteryProgress();
+        renderQuestionDashboard();
+    }
+
+    clearRememberedClearAction();
+}
+
 function renderFavoriteQuestionsHome() {
     if (!favoriteQuestionsSection || !favoriteQuestionsCount || !favoriteQuestionsList) return;
 
@@ -1191,6 +1248,9 @@ function renderFavoriteQuestionsHome() {
 }
 
 function clearFavoriteQuestions() {
+    if (favoriteQuestions.length > 0) {
+        rememberClearAction('favorites', favoriteQuestions);
+    }
     favoriteQuestions = [];
     saveFavoriteQuestions();
     renderFavoriteQuestionsHome();
@@ -1237,12 +1297,18 @@ function renderFailedQuestionsHome() {
 }
 
 function clearFailedQuestions() {
+    if (allFailedQuestions.length > 0) {
+        rememberClearAction('failed', allFailedQuestions);
+    }
     allFailedQuestions = [];
     saveFailedQuestions();
     renderFailedQuestionsHome();
 }
 
 function clearQuestionStats() {
+    if (Object.keys(questionStats).length > 0) {
+        rememberClearAction('stats', questionStats);
+    }
     questionStats = {};
     saveQuestionStats();
     renderMasteryProgress();
@@ -1301,10 +1367,12 @@ retakeFailedExamBtn.onclick = () => startFailedQuestionsReview('exam');
 retakeFailedAttentionBtn.onclick = () => startFailedQuestionsReview('attention');
 retakeFailedAllBtn.onclick = () => startFailedQuestionsReview('all');
 clearFailedQuestionsBtn.onclick = clearFailedQuestions;
+undoClearFailedQuestionsBtn.onclick = undoLastClear;
 favoriteQuestionBtn.onclick = toggleCurrentQuestionFavorite;
 retakeFavoriteExamBtn.onclick = () => startFavoriteQuestionsReview('exam');
 retakeFavoriteAllBtn.onclick = () => startFavoriteQuestionsReview('all');
 clearFavoriteQuestionsBtn.onclick = clearFavoriteQuestions;
+undoClearFavoriteQuestionsBtn.onclick = undoLastClear;
 exportHistoryBtn.onclick = exportHistoryToFile;
 importHistoryBtn.onclick = () => importHistoryFileInput.click();
 importHistoryFileInput.onchange = event => importHistoryFromFile(event.target.files[0]);
@@ -1312,6 +1380,7 @@ if (questionStatsFilter) {
     questionStatsFilter.onchange = renderQuestionDashboard;
 }
 clearQuestionStatsBtn.onclick = clearQuestionStats;
+undoClearQuestionStatsBtn.onclick = undoLastClear;
 restartBtn.onclick = restartExam;
 resultHomeBtn.onclick = goHome;
 homeTabs.forEach(tab => {
