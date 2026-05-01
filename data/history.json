@@ -1,5 +1,54 @@
 {
-  "questionStats": {},
-  "failedQuestions": [],
-  "updatedAt": "2026-05-01T22:07:25.904Z"
+  "questionStats": {
+    "exam:2:question:9": {
+      "answered": 2,
+      "correct": 0,
+      "lastAnsweredAt": "2026-05-01T22:27:20.028Z"
+    },
+    "exam:2:question:13": {
+      "answered": 1,
+      "correct": 0,
+      "lastAnsweredAt": "2026-05-01T22:27:12.398Z"
+    },
+    "exam:18:question:19": {
+      "answered": 2,
+      "correct": 1,
+      "lastAnsweredAt": "2026-05-01T22:27:43.896Z"
+    }
+  },
+  "failedQuestions": [
+    {
+      "id": 9,
+      "question": "Who became Prime Minister and was an inspirational leader to the British people during WWII?",
+      "correctAnswer": "Winston Churchill",
+      "explanation": "Winston Churchill.",
+      "quizQuestion": {
+        "id": 9,
+        "question": "Who became Prime Minister and was an inspirational leader to the British people during WWII?",
+        "reference": "Winston Churchill.",
+        "answers": [
+          {
+            "text": "Winston Churchill",
+            "isCorrect": true
+          },
+          {
+            "text": "Clement Attlee",
+            "isCorrect": false
+          },
+          {
+            "text": "Margaret Thatcher",
+            "isCorrect": false
+          },
+          {
+            "text": "Sir Robert Walpole",
+            "isCorrect": false
+          }
+        ],
+        "historyKey": "exam:2:question:9"
+      },
+      "lastFailedAt": "2026-05-01T22:27:20.903Z"
+    }
+  ],
+  "favoriteQuestions": [],
+  "updatedAt": "2026-05-01T22:27:48.509Z"
 }

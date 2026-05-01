@@ -17,6 +17,7 @@ def default_history() -> dict:
     return {
         "questionStats": {},
         "failedQuestions": [],
+        "favoriteQuestions": [],
         "updatedAt": None,
     }
 
@@ -37,6 +38,7 @@ def read_history() -> dict:
     return {
         "questionStats": history.get("questionStats") if isinstance(history.get("questionStats"), dict) else {},
         "failedQuestions": history.get("failedQuestions") if isinstance(history.get("failedQuestions"), list) else [],
+        "favoriteQuestions": history.get("favoriteQuestions") if isinstance(history.get("favoriteQuestions"), list) else [],
         "updatedAt": history.get("updatedAt"),
     }
 
@@ -46,6 +48,7 @@ def write_history(history: dict) -> None:
     payload = {
         "questionStats": history.get("questionStats") if isinstance(history.get("questionStats"), dict) else {},
         "failedQuestions": history.get("failedQuestions") if isinstance(history.get("failedQuestions"), list) else [],
+        "favoriteQuestions": history.get("favoriteQuestions") if isinstance(history.get("favoriteQuestions"), list) else [],
         "updatedAt": history.get("updatedAt"),
     }
 

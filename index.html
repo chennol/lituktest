@@ -31,6 +31,7 @@
             <div id="home-view">
                 <div class="home-tabs" role="tablist" aria-label="Practice sections">
                     <button id="practice-tab-btn" class="home-tab active" type="button" role="tab" aria-selected="true" aria-controls="practice-tab">Home</button>
+                    <button id="favorites-tab-btn" class="home-tab" type="button" role="tab" aria-selected="false" aria-controls="favorites-tab">Favourites</button>
                     <button id="stats-tab-btn" class="home-tab" type="button" role="tab" aria-selected="false" aria-controls="stats-tab">Question Stats</button>
                     <button id="failed-tab-btn" class="home-tab" type="button" role="tab" aria-selected="false" aria-controls="failed-tab">Failed Questions</button>
                     <button id="cheat-tab-btn" class="home-tab" type="button" role="tab" aria-selected="false" aria-controls="cheat-tab">Cheat Sheet</button>
@@ -82,6 +83,37 @@
                 <div class="special-modes">
                     <button id="random-exam-btn" class="primary-action">Random Exam (24 Questions)</button>
                     <button id="marathon-btn" class="primary-action">Marathon Exam (All Questions)</button>
+                </div>
+
+                <section class="history-transfer-panel">
+                    <div class="history-transfer-header">
+                        <h2>Backup</h2>
+                        <p id="history-transfer-status">Ready</p>
+                    </div>
+                    <div class="history-transfer-actions">
+                        <button id="export-history-btn" class="secondary-action compact" type="button">Export</button>
+                        <button id="import-history-btn" class="secondary-action compact" type="button">Import</button>
+                        <input id="import-history-file" class="hidden" type="file" accept="application/json,.json">
+                    </div>
+                </section>
+                </section>
+
+                <section id="favorites-tab" class="home-tab-panel" role="tabpanel" aria-labelledby="favorites-tab-btn">
+                <div id="favorite-questions-section" class="favorite-questions-panel">
+                    <div class="favorite-questions-header">
+                        <div>
+                            <h2>Favourite Questions</h2>
+                            <p id="favorite-questions-count">0 saved questions</p>
+                        </div>
+                        <button id="clear-favorite-questions-btn" class="secondary-action">Clear</button>
+                    </div>
+                    <div id="favorite-questions-list" class="favorite-questions-list">
+                        <!-- Favourite questions will be injected here -->
+                    </div>
+                    <div class="favorite-retake-actions">
+                        <button id="retake-favorite-exam-btn" class="primary-action">Practise 24 Favourites</button>
+                        <button id="retake-favorite-all-btn" class="primary-action">Practise All Favourites</button>
+                    </div>
                 </div>
                 </section>
 
@@ -160,7 +192,10 @@
                 </div>
                 
                 <div id="question-container">
-                    <h3 id="question-text">Question text goes here?</h3>
+                    <div class="question-title-row">
+                        <h3 id="question-text">Question text goes here?</h3>
+                        <button id="favorite-question-btn" class="favorite-question-btn" type="button" aria-pressed="false">Add favourite</button>
+                    </div>
                     <div id="answers-container" class="stack">
                         <!-- Answer options will be injected here -->
                     </div>
@@ -204,7 +239,6 @@
         </main>
         <footer>
             <p>Built with love</p>
-            <p class="update-info">Last Updated: <span id="last-updated">2026-03-22 03:37</span></p>
         </footer>
     </div>
     <script src="app.js"></script>

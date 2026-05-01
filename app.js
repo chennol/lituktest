@@ -7,6 +7,7 @@ let currentQuestionIndex = 0;
 let score = 0;
 let wrongQuestions = [];
 let allFailedQuestions = [];
+let favoriteQuestions = [];
 let questionStats = {};
 let isMarathon = false;
 let isFailedReview = false;
@@ -30,6 +31,7 @@ const subtitle = document.getElementById('subtitle');
 const timerDisplay = document.getElementById('timer');
 const progress = document.getElementById('progress');
 const questionText = document.getElementById('question-text');
+const favoriteQuestionBtn = document.getElementById('favorite-question-btn');
 const answersContainer = document.getElementById('answers-container');
 const feedbackContainer = document.getElementById('feedback-container');
 const resultStatus = document.getElementById('result-status');
@@ -58,6 +60,12 @@ const retakeFailedExamBtn = document.getElementById('retake-failed-exam-btn');
 const retakeFailedAttentionBtn = document.getElementById('retake-failed-attention-btn');
 const retakeFailedAllBtn = document.getElementById('retake-failed-all-btn');
 const clearFailedQuestionsBtn = document.getElementById('clear-failed-questions-btn');
+const favoriteQuestionsSection = document.getElementById('favorite-questions-section');
+const favoriteQuestionsCount = document.getElementById('favorite-questions-count');
+const favoriteQuestionsList = document.getElementById('favorite-questions-list');
+const retakeFavoriteExamBtn = document.getElementById('retake-favorite-exam-btn');
+const retakeFavoriteAllBtn = document.getElementById('retake-favorite-all-btn');
+const clearFavoriteQuestionsBtn = document.getElementById('clear-favorite-questions-btn');
 const homeTabs = document.querySelectorAll('.home-tab');
 const homeTabPanels = document.querySelectorAll('.home-tab-panel');
 const dashboardSummary = document.getElementById('dashboard-summary');
@@ -69,21 +77,32 @@ const masteryProgressSummary = document.getElementById('mastery-progress-summary
 const masteryProgressPercent = document.getElementById('mastery-progress-percent');
 const masteryProgressFill = document.getElementById('mastery-progress-fill');
 const masteryProgressInsights = document.getElementById('mastery-progress-insights');
+const exportHistoryBtn = document.getElementById('export-history-btn');
+const importHistoryBtn = document.getElementById('import-history-btn');
+const importHistoryFileInput = document.getElementById('import-history-file');
+const historyTransferStatus = document.getElementById('history-transfer-status');
 
 // Initialization
 async function init() {
+    let examsLoaded = false;
+
     try {
         const response = await fetch('exams.json');
+        if (!response.ok) {
+            throw new Error(`Could not load exams.json (${response.status})`);
+        }
         const data = await response.json();
         examsData = data.exams || data;
         metadata = data.metadata || {};
         annotateQuestionHistoryKeys();
+        examsLoaded = true;
         
         if (metadata.lastUpdated && lastUpdatedSpan) {
             lastUpdatedSpan.textContent = metadata.lastUpdated;
         }
         
         allFailedQuestions = loadFailedQuestions();
+        favoriteQuestions = loadFavoriteQuestions();
         questionStats = loadQuestionStats();
         await syncHistoryFromServer();
         normalizeHistoryForQuestionBank();
@@ -92,9 +111,14 @@ async function init() {
         renderMasteryProgress();
         renderQuestionDashboard();
         renderFailedQuestionsHome();
+        renderFavoriteQuestionsHome();
     } catch (error) {
-        console.error('Failed to load exams data:', error);
-        examList.innerHTML = '<p>Error loading exams. Please ensure exams.json exists.</p>';
+        console.error('Failed to initialize app:', error);
+        if (!examsLoaded) {
+            examList.innerHTML = '<p>Error loading exams. Please ensure exams.json exists.</p>';
+        } else {
+            examList.innerHTML = '<p>Error starting the app. Please refresh the page.</p>';
+        }
     }
 }
 
@@ -255,6 +279,27 @@ function startSingleQuestionReview(question) {
     setupQuiz([question], 'Question Review');
 }
 
+function getFavoriteQuizQuestions() {
+    return favoriteQuestions
+        .map(item => item.quizQuestion)
+        .filter(Boolean);
+}
+
+function startFavoriteQuestionsReview(mode = 'all') {
+    const questions = getFavoriteQuizQuestions();
+
+    if (questions.length === 0) {
+        switchHomeTab('favorites');
+        renderFavoriteQuestionsHome();
+        return;
+    }
+
+    currentExam = mode === 'exam' ? 'Favourite Questions Exam' : 'All Favourite Questions';
+    isMarathon = false;
+    isFailedReview = false;
+    setupQuiz(mode === 'exam' ? shuffle(questions).slice(0, 24) : shuffle(questions), currentExam);
+}
+
 function setupQuiz(questions, subtitleText) {
     clearInterval(timerInterval);
     currentQuestions = questions;
@@ -314,6 +359,7 @@ function renderQuestion() {
     
     progress.textContent = `Question ${currentQuestionIndex + 1} of ${currentQuestions.length}`;
     questionText.textContent = question.question;
+    renderFavoriteQuestionButton(question);
     answersContainer.innerHTML = '';
     
     feedbackContainer.classList.add('hidden');
@@ -346,6 +392,55 @@ function renderQuestion() {
         label.appendChild(document.createTextNode(ans.text));
         answersContainer.appendChild(label);
     });
+}
+
+function getQuestionSummaryItem(question, timestampKey = 'favoritedAt', timestampValue = new Date().toISOString()) {
+    return {
+        id: question.id,
+        question: question.question,
+        correctAnswer: question.answers.filter(a => a.isCorrect).map(a => a.text).join(', '),
+        explanation: question.reference,
+        quizQuestion: question,
+        [timestampKey]: timestampValue
+    };
+}
+
+function isQuestionFavorite(question) {
+    const key = getQuestionKey(question);
+    return favoriteQuestions.some(item => getQuestionKey(item.quizQuestion) === key);
+}
+
+function renderFavoriteQuestionButton(question) {
+    if (!favoriteQuestionBtn) return;
+
+    const isFavorite = isQuestionFavorite(question);
+    favoriteQuestionBtn.textContent = isFavorite ? 'Remove favourite' : 'Add favourite';
+    favoriteQuestionBtn.classList.toggle('active', isFavorite);
+    favoriteQuestionBtn.setAttribute('aria-pressed', isFavorite.toString());
+}
+
+function toggleCurrentQuestionFavorite() {
+    const question = currentQuestions[currentQuestionIndex];
+    if (!question) return;
+
+    toggleFavoriteQuestion(question);
+    renderFavoriteQuestionButton(question);
+}
+
+function toggleFavoriteQuestion(question) {
+    const key = getQuestionKey(question);
+    if (!key) return;
+
+    if (isQuestionFavorite(question)) {
+        favoriteQuestions = favoriteQuestions.filter(item => getQuestionKey(item.quizQuestion) !== key);
+    } else {
+        const favoriteByKey = new Map(favoriteQuestions.map(item => [getQuestionKey(item.quizQuestion), item]));
+        favoriteByKey.set(key, getQuestionSummaryItem(question));
+        favoriteQuestions = Array.from(favoriteByKey.values());
+    }
+
+    saveFavoriteQuestions();
+    renderFavoriteQuestionsHome();
 }
 
 function checkAnswer() {
@@ -508,6 +603,7 @@ function getKnownQuestionKeys() {
 
 function normalizeHistoryForQuestionBank() {
     const knownQuestionKeys = getKnownQuestionKeys();
+    const allQuestionKeys = new Set(getAllQuestions().map(getQuestionKey));
     questionStats = Object.entries(questionStats).reduce((stats, [key, value]) => {
         if (knownQuestionKeys.has(key)) {
             stats[key] = value;
@@ -516,16 +612,145 @@ function normalizeHistoryForQuestionBank() {
     }, {});
 
     allFailedQuestions = allFailedQuestions.filter(item => knownQuestionKeys.has(getQuestionKey(item.quizQuestion)));
+    favoriteQuestions = favoriteQuestions.filter(item => allQuestionKeys.has(getQuestionKey(item.quizQuestion)));
     saveQuestionStats();
     saveFailedQuestions();
+    saveFavoriteQuestions();
 }
 
 function getHistoryPayload() {
     return {
         questionStats,
         failedQuestions: allFailedQuestions,
+        favoriteQuestions,
         updatedAt: new Date().toISOString()
     };
+}
+
+function getQuestionByKey(key) {
+    return getAllQuestions().find(question => getQuestionKey(question) === key) || null;
+}
+
+function getCompactHistoryPayload() {
+    return {
+        questionStats,
+        failedQuestionKeys: allFailedQuestions.map(item => ({
+            key: getQuestionKey(item.quizQuestion),
+            lastFailedAt: item.lastFailedAt || null
+        })).filter(item => item.key),
+        favoriteQuestionKeys: favoriteQuestions.map(item => ({
+            key: getQuestionKey(item.quizQuestion),
+            favoritedAt: item.favoritedAt || null
+        })).filter(item => item.key),
+        updatedAt: new Date().toISOString()
+    };
+}
+
+function setHistoryTransferStatus(message, isError = false) {
+    if (!historyTransferStatus) return;
+
+    historyTransferStatus.textContent = message;
+    historyTransferStatus.classList.toggle('error', isError);
+}
+
+function getExportFilename() {
+    const date = new Date().toISOString().slice(0, 10);
+    return `lituk-progress-${date}.json`;
+}
+
+function exportHistoryToFile() {
+    const payload = {
+        app: 'life-in-the-uk-practice',
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        history: getCompactHistoryPayload()
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+
+    link.href = url;
+    link.download = getExportFilename();
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    setHistoryTransferStatus('Exported');
+}
+
+function getImportedHistory(rawImport) {
+    if (!rawImport || typeof rawImport !== 'object' || Array.isArray(rawImport)) {
+        throw new Error('Import file must contain a JSON object.');
+    }
+
+    const history = rawImport.history && typeof rawImport.history === 'object'
+        ? rawImport.history
+        : rawImport;
+
+    const failedQuestions = Array.isArray(history.failedQuestionKeys)
+        ? history.failedQuestionKeys
+            .map(item => {
+                const question = getQuestionByKey(item.key);
+                return question ? getQuestionSummaryItem(question, 'lastFailedAt', item.lastFailedAt || history.updatedAt || rawImport.exportedAt) : null;
+            })
+            .filter(Boolean)
+        : Array.isArray(history.failedQuestions) ? history.failedQuestions : [];
+
+    const favoriteQuestions = Array.isArray(history.favoriteQuestionKeys)
+        ? history.favoriteQuestionKeys
+            .map(item => {
+                const question = getQuestionByKey(item.key);
+                return question ? getQuestionSummaryItem(question, 'favoritedAt', item.favoritedAt || history.updatedAt || rawImport.exportedAt) : null;
+            })
+            .filter(Boolean)
+        : Array.isArray(history.favoriteQuestions) ? history.favoriteQuestions : [];
+
+    return {
+        questionStats: history.questionStats && typeof history.questionStats === 'object' && !Array.isArray(history.questionStats)
+            ? history.questionStats
+            : {},
+        failedQuestions,
+        favoriteQuestions,
+        updatedAt: history.updatedAt || rawImport.exportedAt || new Date().toISOString()
+    };
+}
+
+function applyImportedHistory(importedHistory) {
+    questionStats = mergeQuestionStats({}, importedHistory.questionStats);
+    allFailedQuestions = mergeFailedQuestions([], importedHistory.failedQuestions);
+    favoriteQuestions = mergeFavoriteQuestions([], importedHistory.favoriteQuestions);
+    normalizeHistoryForQuestionBank();
+    renderMasteryProgress();
+    renderQuestionDashboard();
+    renderFailedQuestionsHome();
+    renderFavoriteQuestionsHome();
+    if (currentQuestions[currentQuestionIndex]) {
+        renderFavoriteQuestionButton(currentQuestions[currentQuestionIndex]);
+    }
+}
+
+function importHistoryFromFile(file) {
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+        try {
+            const rawImport = JSON.parse(reader.result);
+            const importedHistory = getImportedHistory(rawImport);
+            applyImportedHistory(importedHistory);
+            setHistoryTransferStatus('Imported');
+        } catch (error) {
+            console.warn('Failed to import saved progress:', error);
+            setHistoryTransferStatus('Import failed', true);
+        } finally {
+            importHistoryFileInput.value = '';
+        }
+    };
+    reader.onerror = () => {
+        setHistoryTransferStatus('Import failed', true);
+        importHistoryFileInput.value = '';
+    };
+    reader.readAsText(file);
 }
 
 function getMostRecentDate(first, second) {
@@ -579,6 +804,30 @@ function mergeFailedQuestions(localFailedQuestions, serverFailedQuestions) {
     return Array.from(failedByKey.values());
 }
 
+function mergeFavoriteQuestions(localFavoriteQuestions, serverFavoriteQuestions) {
+    const favoriteByKey = new Map();
+
+    [...(serverFavoriteQuestions || []), ...(localFavoriteQuestions || [])].forEach(item => {
+        const quizQuestion = findQuestionInBank(item.quizQuestion || item) || item.quizQuestion || item;
+        if (!quizQuestion || !quizQuestion.question || !Array.isArray(quizQuestion.answers)) return;
+
+        const key = getQuestionKey(quizQuestion);
+        const existing = favoriteByKey.get(key);
+        if (!existing || new Date(item.favoritedAt || 0) >= new Date(existing.favoritedAt || 0)) {
+            favoriteByKey.set(key, {
+                id: quizQuestion.id,
+                question: item.question || quizQuestion.question,
+                correctAnswer: item.correctAnswer || quizQuestion.answers.filter(a => a.isCorrect).map(a => a.text).join(', '),
+                explanation: item.explanation || quizQuestion.reference,
+                quizQuestion,
+                favoritedAt: item.favoritedAt
+            });
+        }
+    });
+
+    return Array.from(favoriteByKey.values());
+}
+
 async function syncHistoryFromServer() {
     try {
         const response = await fetch(HISTORY_API_URL);
@@ -587,8 +836,10 @@ async function syncHistoryFromServer() {
         const serverHistory = await response.json();
         questionStats = mergeQuestionStats(questionStats, serverHistory.questionStats);
         allFailedQuestions = mergeFailedQuestions(allFailedQuestions, serverHistory.failedQuestions);
+        favoriteQuestions = mergeFavoriteQuestions(favoriteQuestions, serverHistory.favoriteQuestions);
         saveQuestionStats();
         saveFailedQuestions();
+        saveFavoriteQuestions();
     } catch (error) {
         console.info('Server history is unavailable; using local history only.');
     }
@@ -873,6 +1124,81 @@ function saveFailedQuestions() {
     saveHistoryToServer();
 }
 
+function loadFavoriteQuestions() {
+    try {
+        const stored = JSON.parse(localStorage.getItem('favoriteQuestions') || '[]');
+        if (!Array.isArray(stored)) return [];
+
+        return mergeFavoriteQuestions([], stored);
+    } catch (error) {
+        console.warn('Failed to load saved favourite questions:', error);
+        return [];
+    }
+}
+
+function saveFavoriteQuestions() {
+    localStorage.setItem('favoriteQuestions', JSON.stringify(favoriteQuestions));
+    saveHistoryToServer();
+}
+
+function renderFavoriteQuestionsHome() {
+    if (!favoriteQuestionsSection || !favoriteQuestionsCount || !favoriteQuestionsList) return;
+
+    const count = favoriteQuestions.length;
+    const favoriteActionButtons = [retakeFavoriteExamBtn, retakeFavoriteAllBtn].filter(Boolean);
+    favoriteQuestionsCount.textContent = `${count} saved question${count === 1 ? '' : 's'}`;
+    favoriteQuestionsList.innerHTML = '';
+    favoriteQuestionsSection.classList.remove('hidden');
+
+    if (count === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'favorite-question-empty';
+        empty.textContent = 'No favourite questions saved yet.';
+        favoriteQuestionsList.appendChild(empty);
+        favoriteActionButtons.forEach(button => button.disabled = true);
+        clearFavoriteQuestionsBtn.disabled = true;
+        return;
+    }
+
+    favoriteActionButtons.forEach(button => button.disabled = false);
+    clearFavoriteQuestionsBtn.disabled = false;
+    favoriteQuestions.forEach(item => {
+        const row = document.createElement('article');
+        row.className = 'favorite-question-row';
+
+        const title = document.createElement('h3');
+        title.textContent = item.question;
+
+        const actions = document.createElement('div');
+        actions.className = 'favorite-question-actions';
+
+        const retakeBtn = document.createElement('button');
+        retakeBtn.className = 'retake-question-btn';
+        retakeBtn.type = 'button';
+        retakeBtn.textContent = 'Practise';
+        retakeBtn.onclick = () => startSingleQuestionReview(item.quizQuestion);
+
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'remove-favorite-question-btn';
+        removeBtn.type = 'button';
+        removeBtn.textContent = 'Remove';
+        removeBtn.onclick = () => toggleFavoriteQuestion(item.quizQuestion);
+
+        actions.append(retakeBtn, removeBtn);
+        row.append(title, actions);
+        favoriteQuestionsList.appendChild(row);
+    });
+}
+
+function clearFavoriteQuestions() {
+    favoriteQuestions = [];
+    saveFavoriteQuestions();
+    renderFavoriteQuestionsHome();
+    if (currentQuestions[currentQuestionIndex]) {
+        renderFavoriteQuestionButton(currentQuestions[currentQuestionIndex]);
+    }
+}
+
 function renderFailedQuestionsHome() {
     if (!failedQuestionsSection || !failedQuestionsCount || !failedQuestionsList) return;
 
@@ -937,6 +1263,7 @@ function goHome() {
     renderMasteryProgress();
     renderQuestionDashboard();
     renderFailedQuestionsHome();
+    renderFavoriteQuestionsHome();
     
     window.scrollTo(0, 0);
 }
@@ -954,6 +1281,10 @@ function restartExam() {
         startFailedQuestionsReview('all');
     } else if (currentExam === 'Question Review') {
         setupQuiz(currentQuestions, 'Question Review');
+    } else if (currentExam === 'Favourite Questions Exam') {
+        startFavoriteQuestionsReview('exam');
+    } else if (currentExam === 'All Favourite Questions') {
+        startFavoriteQuestionsReview('all');
     } else {
         startExam(currentExam);
     }
@@ -970,6 +1301,13 @@ retakeFailedExamBtn.onclick = () => startFailedQuestionsReview('exam');
 retakeFailedAttentionBtn.onclick = () => startFailedQuestionsReview('attention');
 retakeFailedAllBtn.onclick = () => startFailedQuestionsReview('all');
 clearFailedQuestionsBtn.onclick = clearFailedQuestions;
+favoriteQuestionBtn.onclick = toggleCurrentQuestionFavorite;
+retakeFavoriteExamBtn.onclick = () => startFavoriteQuestionsReview('exam');
+retakeFavoriteAllBtn.onclick = () => startFavoriteQuestionsReview('all');
+clearFavoriteQuestionsBtn.onclick = clearFavoriteQuestions;
+exportHistoryBtn.onclick = exportHistoryToFile;
+importHistoryBtn.onclick = () => importHistoryFileInput.click();
+importHistoryFileInput.onchange = event => importHistoryFromFile(event.target.files[0]);
 if (questionStatsFilter) {
     questionStatsFilter.onchange = renderQuestionDashboard;
 }
@@ -980,6 +1318,7 @@ homeTabs.forEach(tab => {
     tab.onclick = () => {
         const tabName = tab.id.replace('-tab-btn', '');
         switchHomeTab(tabName);
+        if (tabName === 'favorites') renderFavoriteQuestionsHome();
         if (tabName === 'stats') renderQuestionDashboard();
         if (tabName === 'failed') renderFailedQuestionsHome();
     };
