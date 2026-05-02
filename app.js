@@ -54,7 +54,6 @@ const resultHomeBtn = document.getElementById('result-home-btn');
 
 // Home Mode Buttons
 const randomExamBtn = document.getElementById('random-exam-btn');
-const mockExamBtn = document.getElementById('mock-exam-btn');
 const marathonBtn = document.getElementById('marathon-btn');
 const failedQuestionsSection = document.getElementById('failed-questions-section');
 const failedQuestionsCount = document.getElementById('failed-questions-count');
@@ -87,6 +86,9 @@ const exportHistoryBtn = document.getElementById('export-history-btn');
 const importHistoryBtn = document.getElementById('import-history-btn');
 const importHistoryFileInput = document.getElementById('import-history-file');
 const historyTransferStatus = document.getElementById('history-transfer-status');
+const answerVisibilityDialog = document.getElementById('answer-visibility-dialog');
+const showAnswersNowBtn = document.getElementById('show-answers-now-btn');
+const showAnswersEndBtn = document.getElementById('show-answers-end-btn');
 
 // Initialization
 async function init() {
@@ -213,45 +215,51 @@ function getCoreQuestions() {
     return core;
 }
 
-function startExam(examNum) {
+async function startExam(examNum) {
     currentExam = examNum;
     isMarathon = false;
     isFailedReview = false;
-    hideAnswersUntilEnd = !askShouldShowAnswers();
+    hideAnswersUntilEnd = !(await askShouldShowAnswers());
     setupQuiz(shuffle(examsData[examNum]), getExamLabel(examNum));
 }
 
-function startRandomExam() {
+async function startRandomExam() {
     currentExam = 'Random';
     isMarathon = false;
     isFailedReview = false;
-    hideAnswersUntilEnd = !askShouldShowAnswers();
+    hideAnswersUntilEnd = !(await askShouldShowAnswers());
     const all = getCoreQuestions();
     const randomSelection = shuffle(all).slice(0, 24);
     setupQuiz(randomSelection, 'Random Exam');
 }
 
-function startMockExam() {
-    currentExam = 'Mock';
-    isMarathon = false;
-    isFailedReview = false;
-    hideAnswersUntilEnd = !askShouldShowAnswers();
-    const all = getCoreQuestions();
-    const randomSelection = shuffle(all).slice(0, 24);
-    setupQuiz(randomSelection, 'Mock Exam');
-}
-
-function startMarathon() {
+async function startMarathon() {
     currentExam = 'Marathon';
     isMarathon = true;
     isFailedReview = false;
-    hideAnswersUntilEnd = !askShouldShowAnswers();
+    hideAnswersUntilEnd = !(await askShouldShowAnswers());
     const all = getCoreQuestions();
     setupQuiz(shuffle(all), 'Marathon Exam');
 }
 
 function askShouldShowAnswers() {
-    return window.confirm('Show answers after each question?\n\nOK = show answers during the exam\nCancel = show answers only at the end');
+    if (!answerVisibilityDialog || !showAnswersNowBtn || !showAnswersEndBtn) {
+        return Promise.resolve(true);
+    }
+
+    return new Promise(resolve => {
+        const choose = shouldShowAnswers => {
+            answerVisibilityDialog.classList.add('hidden');
+            showAnswersNowBtn.onclick = null;
+            showAnswersEndBtn.onclick = null;
+            resolve(shouldShowAnswers);
+        };
+
+        showAnswersNowBtn.onclick = () => choose(true);
+        showAnswersEndBtn.onclick = () => choose(false);
+        answerVisibilityDialog.classList.remove('hidden');
+        showAnswersNowBtn.focus();
+    });
 }
 
 function getFailedQuizQuestions() {
@@ -273,7 +281,7 @@ function getFailedQuestionsByAttention() {
     });
 }
 
-function startFailedQuestionsReview(mode = 'all') {
+async function startFailedQuestionsReview(mode = 'all') {
     const failedQuestions = allFailedQuestions
         .map(item => item.quizQuestion)
         .filter(Boolean);
@@ -286,7 +294,7 @@ function startFailedQuestionsReview(mode = 'all') {
 
     isMarathon = false;
     isFailedReview = true;
-    hideAnswersUntilEnd = !askShouldShowAnswers();
+    hideAnswersUntilEnd = !(await askShouldShowAnswers());
 
     if (mode === 'exam') {
         currentExam = 'Failed Questions Exam';
@@ -300,11 +308,11 @@ function startFailedQuestionsReview(mode = 'all') {
     }
 }
 
-function startSingleQuestionReview(question) {
+async function startSingleQuestionReview(question) {
     currentExam = 'Question Review';
     isMarathon = false;
     isFailedReview = false;
-    hideAnswersUntilEnd = !askShouldShowAnswers();
+    hideAnswersUntilEnd = !(await askShouldShowAnswers());
     setupQuiz([question], 'Question Review');
 }
 
@@ -314,7 +322,7 @@ function getFavoriteQuizQuestions() {
         .filter(Boolean);
 }
 
-function startFavoriteQuestionsReview(mode = 'all') {
+async function startFavoriteQuestionsReview(mode = 'all') {
     const questions = getFavoriteQuizQuestions();
 
     if (questions.length === 0) {
@@ -326,7 +334,7 @@ function startFavoriteQuestionsReview(mode = 'all') {
     currentExam = mode === 'exam' ? 'Favourite Questions Exam' : 'All Favourite Questions';
     isMarathon = false;
     isFailedReview = false;
-    hideAnswersUntilEnd = !askShouldShowAnswers();
+    hideAnswersUntilEnd = !(await askShouldShowAnswers());
     setupQuiz(mode === 'exam' ? shuffle(questions).slice(0, 24) : shuffle(questions), currentExam);
 }
 
@@ -1402,11 +1410,9 @@ function goHome() {
     window.scrollTo(0, 0);
 }
 
-function restartExam() {
+async function restartExam() {
     if (currentExam === 'Random') {
         startRandomExam();
-    } else if (currentExam === 'Mock') {
-        startMockExam();
     } else if (currentExam === 'Marathon') {
         startMarathon();
     } else if (currentExam === 'Failed Questions Exam') {
@@ -1416,7 +1422,7 @@ function restartExam() {
     } else if (currentExam === 'All Failed Questions') {
         startFailedQuestionsReview('all');
     } else if (currentExam === 'Question Review') {
-        hideAnswersUntilEnd = !askShouldShowAnswers();
+        hideAnswersUntilEnd = !(await askShouldShowAnswers());
         setupQuiz(currentQuestions, 'Question Review');
     } else if (currentExam === 'Favourite Questions Exam') {
         startFavoriteQuestionsReview('exam');
@@ -1433,7 +1439,6 @@ nextBtn.onclick = nextQuestion;
 homeBtn.onclick = goHome;
 stopBtn.onclick = () => showResults();
 randomExamBtn.onclick = startRandomExam;
-mockExamBtn.onclick = startMockExam;
 marathonBtn.onclick = startMarathon;
 retakeFailedExamBtn.onclick = () => startFailedQuestionsReview('exam');
 retakeFailedAttentionBtn.onclick = () => startFailedQuestionsReview('attention');

@@ -38,12 +38,6 @@
                 </div>
 
                 <section id="practice-tab" class="home-tab-panel active" role="tabpanel" aria-labelledby="practice-tab-btn">
-                <section class="features">
-                    <p>🎯 <strong>Randomized Exams:</strong> Questions are shuffled every time you start.</p>
-                    <p>🔀 <strong>Shuffled Options:</strong> Answer choices are randomized for real learning.</p>
-                    <p>📱 <strong>Mobile First:</strong> Simple, easy-to-use interface for on-the-go practice.</p>
-                </section>
-
                 <section class="mastery-progress-panel">
                     <div class="mastery-progress-header">
                         <div>
@@ -59,10 +53,6 @@
                         <!-- Mastery insights will be injected here -->
                     </div>
                 </section>
-
-                <div class="center-action">
-                    <a href="exams.md" class="download-link wide" download>Download All Exams (Markdown)</a>
-                </div>
 
                 <div class="home-actions">
                     <h2>Select an Exam</h2>
@@ -82,7 +72,6 @@
                 </div>
                 <div class="special-modes">
                     <button id="random-exam-btn" class="primary-action">Random Exam (24 Questions)</button>
-                    <button id="mock-exam-btn" class="primary-action">Mock Exam (24 Questions)</button>
                     <button id="marathon-btn" class="primary-action">Marathon Exam (All Questions)</button>
                 </div>
 
@@ -243,6 +232,23 @@
                     <div class="controls">
                         <button id="restart-btn">Try Again</button>
                         <button id="result-home-btn">Back to Home</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="answer-visibility-dialog" class="answer-visibility-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="answer-visibility-title">
+                <div class="answer-visibility-card">
+                    <h2 id="answer-visibility-title">Show answers while practising?</h2>
+                    <p>Choose how you want feedback to appear for this exam.</p>
+                    <div class="answer-visibility-options">
+                        <button id="show-answers-now-btn" class="answer-visibility-option" type="button">
+                            <strong>Show after each question</strong>
+                            <span>Get instant feedback and explanations as you go.</span>
+                        </button>
+                        <button id="show-answers-end-btn" class="answer-visibility-option" type="button">
+                            <strong>Show only at the end</strong>
+                            <span>Keep exam conditions and review mistakes later.</span>
+                        </button>
                     </div>
                 </div>
             </div>

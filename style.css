@@ -259,18 +259,6 @@ h3 { font-size: 1rem; margin-bottom: var(--spacing); }
     width: 100%;
 }
 
-.features {
-    background: white;
-    padding: var(--spacing);
-    border-radius: var(--border-radius);
-    margin-bottom: 20px;
-    font-size: 0.9rem;
-    border: 1px solid #eee;
-}
-
-.features p { margin-bottom: 8px; }
-.features p:last-child { margin-bottom: 0; }
-
 .mastery-progress-panel {
     background: white;
     border: 1px solid #eee;
@@ -390,26 +378,6 @@ h3 { font-size: 1rem; margin-bottom: var(--spacing); }
     width: auto;
 }
 
-.center-action {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 24px;
-}
-
-.download-link {
-    font-size: 0.85rem;
-    color: var(--primary-color);
-    text-decoration: none;
-    padding: 10px 20px;
-    border: 1px solid var(--primary-color);
-    border-radius: 4px;
-    text-align: center;
-}
-
-.download-link.wide {
-    width: 80%;
-}
-
 .special-modes {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -454,6 +422,69 @@ h3 { font-size: 1rem; margin-bottom: var(--spacing); }
     color: white;
 }
 
+.answer-visibility-dialog {
+    align-items: center;
+    background: rgba(10, 18, 32, 0.56);
+    display: flex;
+    inset: 0;
+    justify-content: center;
+    padding: 20px;
+    position: fixed;
+    z-index: 300;
+}
+
+.answer-visibility-card {
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.24);
+    max-width: 440px;
+    padding: 22px;
+    width: 100%;
+}
+
+.answer-visibility-card h2 {
+    margin-bottom: 8px;
+}
+
+.answer-visibility-card p {
+    color: var(--secondary-color);
+    font-size: 0.95rem;
+    margin-bottom: 16px;
+}
+
+.answer-visibility-options {
+    display: grid;
+    gap: 10px;
+}
+
+.answer-visibility-option {
+    background: white;
+    border: 1px solid #d9e1ea;
+    border-radius: 8px;
+    color: var(--text-color);
+    padding: 14px;
+    text-align: left;
+}
+
+.answer-visibility-option:hover,
+.answer-visibility-option:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(0, 86, 179, 0.12);
+    outline: none;
+}
+
+.answer-visibility-option strong,
+.answer-visibility-option span {
+    display: block;
+}
+
+.answer-visibility-option span {
+    color: var(--secondary-color);
+    font-size: 0.88rem;
+    font-weight: normal;
+    margin-top: 4px;
+}
+
 .panel-actions {
     display: flex;
     flex: 0 0 auto;
@@ -470,11 +501,6 @@ h3 { font-size: 1rem; margin-bottom: var(--spacing); }
 }
 
 .undo-action:hover {
-    background-color: var(--primary-color);
-    color: white;
-}
-
-.download-link:hover {
     background-color: var(--primary-color);
     color: white;
 }
