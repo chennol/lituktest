@@ -11,6 +11,7 @@ let favoriteQuestions = [];
 let questionStats = {};
 let isMarathon = false;
 let isFailedReview = false;
+let isMockExam = false;
 let lastClearAction = null;
 
 // Timer State
@@ -53,6 +54,7 @@ const resultHomeBtn = document.getElementById('result-home-btn');
 
 // Home Mode Buttons
 const randomExamBtn = document.getElementById('random-exam-btn');
+const mockExamBtn = document.getElementById('mock-exam-btn');
 const marathonBtn = document.getElementById('marathon-btn');
 const failedQuestionsSection = document.getElementById('failed-questions-section');
 const failedQuestionsCount = document.getElementById('failed-questions-count');
@@ -215,6 +217,7 @@ function startExam(examNum) {
     currentExam = examNum;
     isMarathon = false;
     isFailedReview = false;
+    isMockExam = false;
     setupQuiz(shuffle(examsData[examNum]), getExamLabel(examNum));
 }
 
@@ -222,15 +225,27 @@ function startRandomExam() {
     currentExam = 'Random';
     isMarathon = false;
     isFailedReview = false;
+    isMockExam = false;
     const all = getCoreQuestions();
     const randomSelection = shuffle(all).slice(0, 24);
     setupQuiz(randomSelection, 'Random Exam');
+}
+
+function startMockExam() {
+    currentExam = 'Mock';
+    isMarathon = false;
+    isFailedReview = false;
+    isMockExam = true;
+    const all = getCoreQuestions();
+    const randomSelection = shuffle(all).slice(0, 24);
+    setupQuiz(randomSelection, 'Mock Exam');
 }
 
 function startMarathon() {
     currentExam = 'Marathon';
     isMarathon = true;
     isFailedReview = false;
+    isMockExam = false;
     const all = getCoreQuestions();
     setupQuiz(shuffle(all), 'Marathon Exam');
 }
@@ -267,6 +282,7 @@ function startFailedQuestionsReview(mode = 'all') {
 
     isMarathon = false;
     isFailedReview = true;
+    isMockExam = false;
 
     if (mode === 'exam') {
         currentExam = 'Failed Questions Exam';
@@ -284,6 +300,7 @@ function startSingleQuestionReview(question) {
     currentExam = 'Question Review';
     isMarathon = false;
     isFailedReview = false;
+    isMockExam = false;
     setupQuiz([question], 'Question Review');
 }
 
@@ -305,6 +322,7 @@ function startFavoriteQuestionsReview(mode = 'all') {
     currentExam = mode === 'exam' ? 'Favourite Questions Exam' : 'All Favourite Questions';
     isMarathon = false;
     isFailedReview = false;
+    isMockExam = false;
     setupQuiz(mode === 'exam' ? shuffle(questions).slice(0, 24) : shuffle(questions), currentExam);
 }
 
@@ -463,11 +481,15 @@ function checkAnswer() {
         const label = input.parentElement;
 
         if (isCorrect) {
-            label.classList.add('correct');
+            if (!isMockExam) {
+                label.classList.add('correct');
+            }
             if (!isChecked) allCorrect = false;
         } else {
             if (isChecked) {
-                label.classList.add('incorrect');
+                if (!isMockExam) {
+                    label.classList.add('incorrect');
+                }
                 anyWrong = true;
             }
         }
@@ -490,14 +512,19 @@ function checkAnswer() {
     }
 
     resultStatus.textContent = success ? '✅ Correct!' : '❌ Incorrect';
-    resultStatus.style.color = success ? 'var(--success-color)' : 'var(--danger-color)';
-    explanationText.textContent = question.reference || 'No explanation available.';
-    
-    feedbackContainer.classList.remove('hidden');
+    if (isMockExam) {
+        feedbackContainer.classList.add('hidden');
+    } else {
+        resultStatus.style.color = success ? 'var(--success-color)' : 'var(--danger-color)';
+        explanationText.textContent = question.reference || 'No explanation available.';
+        feedbackContainer.classList.remove('hidden');
+    }
     checkBtn.classList.add('hidden');
     nextBtn.classList.remove('hidden');
     
-    feedbackContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    if (!isMockExam) {
+        feedbackContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
 }
 
 function nextQuestion() {
@@ -1337,6 +1364,8 @@ function goHome() {
 function restartExam() {
     if (currentExam === 'Random') {
         startRandomExam();
+    } else if (currentExam === 'Mock') {
+        startMockExam();
     } else if (currentExam === 'Marathon') {
         startMarathon();
     } else if (currentExam === 'Failed Questions Exam') {
@@ -1362,6 +1391,7 @@ nextBtn.onclick = nextQuestion;
 homeBtn.onclick = goHome;
 stopBtn.onclick = () => showResults();
 randomExamBtn.onclick = startRandomExam;
+mockExamBtn.onclick = startMockExam;
 marathonBtn.onclick = startMarathon;
 retakeFailedExamBtn.onclick = () => startFailedQuestionsReview('exam');
 retakeFailedAttentionBtn.onclick = () => startFailedQuestionsReview('attention');
