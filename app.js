@@ -11,7 +11,7 @@ let favoriteQuestions = [];
 let questionStats = {};
 let isMarathon = false;
 let isFailedReview = false;
-let isMockExam = false;
+let hideAnswersUntilEnd = false;
 let lastClearAction = null;
 
 // Timer State
@@ -217,7 +217,7 @@ function startExam(examNum) {
     currentExam = examNum;
     isMarathon = false;
     isFailedReview = false;
-    isMockExam = false;
+    hideAnswersUntilEnd = !askShouldShowAnswers();
     setupQuiz(shuffle(examsData[examNum]), getExamLabel(examNum));
 }
 
@@ -225,7 +225,7 @@ function startRandomExam() {
     currentExam = 'Random';
     isMarathon = false;
     isFailedReview = false;
-    isMockExam = false;
+    hideAnswersUntilEnd = !askShouldShowAnswers();
     const all = getCoreQuestions();
     const randomSelection = shuffle(all).slice(0, 24);
     setupQuiz(randomSelection, 'Random Exam');
@@ -235,7 +235,7 @@ function startMockExam() {
     currentExam = 'Mock';
     isMarathon = false;
     isFailedReview = false;
-    isMockExam = true;
+    hideAnswersUntilEnd = !askShouldShowAnswers();
     const all = getCoreQuestions();
     const randomSelection = shuffle(all).slice(0, 24);
     setupQuiz(randomSelection, 'Mock Exam');
@@ -245,9 +245,13 @@ function startMarathon() {
     currentExam = 'Marathon';
     isMarathon = true;
     isFailedReview = false;
-    isMockExam = false;
+    hideAnswersUntilEnd = !askShouldShowAnswers();
     const all = getCoreQuestions();
     setupQuiz(shuffle(all), 'Marathon Exam');
+}
+
+function askShouldShowAnswers() {
+    return window.confirm('Show answers after each question?\n\nOK = show answers during the exam\nCancel = show answers only at the end');
 }
 
 function getFailedQuizQuestions() {
@@ -282,7 +286,7 @@ function startFailedQuestionsReview(mode = 'all') {
 
     isMarathon = false;
     isFailedReview = true;
-    isMockExam = false;
+    hideAnswersUntilEnd = !askShouldShowAnswers();
 
     if (mode === 'exam') {
         currentExam = 'Failed Questions Exam';
@@ -300,7 +304,7 @@ function startSingleQuestionReview(question) {
     currentExam = 'Question Review';
     isMarathon = false;
     isFailedReview = false;
-    isMockExam = false;
+    hideAnswersUntilEnd = !askShouldShowAnswers();
     setupQuiz([question], 'Question Review');
 }
 
@@ -322,7 +326,7 @@ function startFavoriteQuestionsReview(mode = 'all') {
     currentExam = mode === 'exam' ? 'Favourite Questions Exam' : 'All Favourite Questions';
     isMarathon = false;
     isFailedReview = false;
-    isMockExam = false;
+    hideAnswersUntilEnd = !askShouldShowAnswers();
     setupQuiz(mode === 'exam' ? shuffle(questions).slice(0, 24) : shuffle(questions), currentExam);
 }
 
@@ -481,13 +485,13 @@ function checkAnswer() {
         const label = input.parentElement;
 
         if (isCorrect) {
-            if (!isMockExam) {
+            if (!hideAnswersUntilEnd) {
                 label.classList.add('correct');
             }
             if (!isChecked) allCorrect = false;
         } else {
             if (isChecked) {
-                if (!isMockExam) {
+                if (!hideAnswersUntilEnd) {
                     label.classList.add('incorrect');
                 }
                 anyWrong = true;
@@ -512,7 +516,7 @@ function checkAnswer() {
     }
 
     resultStatus.textContent = success ? '✅ Correct!' : '❌ Incorrect';
-    if (isMockExam) {
+    if (hideAnswersUntilEnd) {
         feedbackContainer.classList.add('hidden');
     } else {
         resultStatus.style.color = success ? 'var(--success-color)' : 'var(--danger-color)';
@@ -522,7 +526,7 @@ function checkAnswer() {
     checkBtn.classList.add('hidden');
     nextBtn.classList.remove('hidden');
     
-    if (!isMockExam) {
+    if (!hideAnswersUntilEnd) {
         feedbackContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 }
@@ -1375,6 +1379,7 @@ function restartExam() {
     } else if (currentExam === 'All Failed Questions') {
         startFailedQuestionsReview('all');
     } else if (currentExam === 'Question Review') {
+        hideAnswersUntilEnd = !askShouldShowAnswers();
         setupQuiz(currentQuestions, 'Question Review');
     } else if (currentExam === 'Favourite Questions Exam') {
         startFavoriteQuestionsReview('exam');
