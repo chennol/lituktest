@@ -1055,6 +1055,18 @@ button:disabled {
     font-style: italic;
 }
 
+.wrong-favorite-btn {
+    margin-top: 12px;
+    padding: 10px 14px;
+    font-size: 0.9rem;
+    border-radius: 6px;
+}
+
+.wrong-favorite-btn:disabled {
+    cursor: default;
+    opacity: 0.75;
+}
+
 .hidden { display: none !important; }
 
 footer {

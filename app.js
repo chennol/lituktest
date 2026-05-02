@@ -464,13 +464,25 @@ function toggleFavoriteQuestion(question) {
     if (isQuestionFavorite(question)) {
         favoriteQuestions = favoriteQuestions.filter(item => getQuestionKey(item.quizQuestion) !== key);
     } else {
-        const favoriteByKey = new Map(favoriteQuestions.map(item => [getQuestionKey(item.quizQuestion), item]));
-        favoriteByKey.set(key, getQuestionSummaryItem(question));
-        favoriteQuestions = Array.from(favoriteByKey.values());
+        addQuestionToFavorites(question);
+        return;
     }
 
     saveFavoriteQuestions();
     renderFavoriteQuestionsHome();
+}
+
+function addQuestionToFavorites(question) {
+    const key = getQuestionKey(question);
+    if (!key || isQuestionFavorite(question)) return false;
+
+    const favoriteByKey = new Map(favoriteQuestions.map(item => [getQuestionKey(item.quizQuestion), item]));
+    favoriteByKey.set(key, getQuestionSummaryItem(question));
+    favoriteQuestions = Array.from(favoriteByKey.values());
+
+    saveFavoriteQuestions();
+    renderFavoriteQuestionsHome();
+    return true;
 }
 
 function checkAnswer() {
@@ -581,11 +593,36 @@ function showResults(isTimeUp = false) {
         wrongQuestions.forEach(item => {
             const div = document.createElement('div');
             div.className = 'wrong-item';
-            div.innerHTML = `
-                <div class="wrong-question">${item.question}</div>
-                <div class="correct-answer-was">Correct: ${item.correctAnswer}</div>
-                <div class="wrong-explanation">${item.explanation || ''}</div>
-            `;
+
+            const questionText = document.createElement('div');
+            questionText.className = 'wrong-question';
+            questionText.textContent = item.question;
+
+            const correctAnswer = document.createElement('div');
+            correctAnswer.className = 'correct-answer-was';
+            correctAnswer.textContent = `Correct: ${item.correctAnswer}`;
+
+            const explanation = document.createElement('div');
+            explanation.className = 'wrong-explanation';
+            explanation.textContent = item.explanation || '';
+
+            const favoriteButton = document.createElement('button');
+            favoriteButton.className = 'wrong-favorite-btn';
+            favoriteButton.type = 'button';
+            favoriteButton.onclick = () => {
+                addQuestionToFavorites(item.quizQuestion);
+                favoriteButton.textContent = 'Added to favourites';
+                favoriteButton.disabled = true;
+            };
+
+            if (isQuestionFavorite(item.quizQuestion)) {
+                favoriteButton.textContent = 'Added to favourites';
+                favoriteButton.disabled = true;
+            } else {
+                favoriteButton.textContent = 'Add to favourites';
+            }
+
+            div.append(questionText, correctAnswer, explanation, favoriteButton);
             wrongAnswersList.appendChild(div);
         });
     } else {
